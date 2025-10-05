@@ -55,6 +55,7 @@ while t < t_max:
     velo_stamp.append(w)
     ang_stamp.append(x)
 
+p.figure(figsize=(15, 8))
 # Plotting the angular velocity graph
 p.subplot(1, 2, 1)
 p.plot(timestamp, velo_stamp)
@@ -76,5 +77,7 @@ p.xlim(0,t_max)
 p.ylim(0,pi/2)
 p.axhline(y=x_f, color='red', linestyle='--', linewidth=1, label="Terminal Angular Elevation")
 p.legend()
+
+p.suptitle(f"Power Required: {round(k*0.3004*(R**3)*(w_f**3), 1)} W", fontsize=16)
 
 p.show()
