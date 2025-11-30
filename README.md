@@ -3,11 +3,11 @@ Flying Swing Carousel Simulation
 This repository contains a Python analysis of a flying swing carousel. The code models key dynamics such as angular velocity, air drag, and angular elevation.
 
 
-Language
+Language:
 Developed using Python 3
 
 
-Requirements
+Requirements:
 To run the simulation, ensure the following are installed on your system:
 
  - Python 3
