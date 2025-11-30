@@ -8,23 +8,16 @@ w0 = 0
 x = x0
 w = w0
 t = 0
-t_max = 120
 
 r = 5
 l = 3
 w_f = 2
-k = 12
-
-structure_inertia = 328.4 * r**3
-
+k = 6
 
 # lists to store the progression of w and x along with t
 timestamp = [t]
 velo_stamp = [w]
 ang_stamp = [x]
-
-# The value of drag coefficient
-Cd = 0.776
 
 #Simple setup for the dichotomy
 x_f = pi/4
@@ -43,13 +36,23 @@ for i in range(10):
 # terminal distance between the seats and the rotation axis
 R = r+l*sin(x_f)
 
-# Iterating over time - Euler-forward method implementation to solve the differential equation
-while t < t_max:
-    A = 5+3*sin(x) # Distance between the seats and the rotation axis
-    w = dt*k*0.3004*((R**3)*(w_f**2)-(9.81*A**2)*tan(x))/(structure_inertia+k*70*A**2) + w #equation for the progression of angular velocity
-    x = atan((A)*(w**2)/9.81) # equation for the progression of angular elevation
-    t+=dt
 
+structure_inertia = 20.65 * r**4
+
+capped =False
+# Iterating over time - Euler-forward method implementation to solve the differential equation. 
+# Stops when w is virtually equal to w_f
+while w < w_f*0.999: 
+    A = r+l*sin(x) # Distance between the seats and the rotation axis
+    w = dt*0.3004*((R**3)*(w_f**2)-(9.81*A**2)*tan(x))/(structure_inertia+70*A**2) + w #equation for the progression of angular velocity
+    x = atan((A)*(w**2)/9.81) # equation for the progression of angular elevation
+    
+    # To find when the system is very close to terminal velocity
+    if (not capped) and w > w_f*0.99: 
+        n_N = t
+        capped =True
+
+    t+=dt
     # storing new w and x values along with their respective timestamps
     timestamp.append(t)
     velo_stamp.append(w)
@@ -62,8 +65,8 @@ p.plot(timestamp, velo_stamp)
 p.title("Angular Velocity (rad/s) vs. Time (s)")
 p.xlabel("Time (s)")
 p.ylabel("Angular Velocity (rad/s)")
-p.xlim(0,t_max)
-p.ylim(0,w_f+0.5)
+p.xlim(0,timestamp[-1])
+p.ylim(0,w_f*1.2)
 p.axhline(y=w_f, color='red', linestyle='--', linewidth=1, label="Terminal Angular Velocity")
 p.legend()
 
@@ -73,11 +76,11 @@ p.plot(timestamp, ang_stamp)
 p.title("Angular Elevation (rad) vs. Time (s)")
 p.xlabel("Time (s)")
 p.ylabel("Angular Elevation (rad)")
-p.xlim(0,t_max)
-p.ylim(0,pi/2)
+p.xlim(0,timestamp[-1])
+p.ylim(0,x_f*1.2)
 p.axhline(y=x_f, color='red', linestyle='--', linewidth=1, label="Terminal Angular Elevation")
 p.legend()
 
-p.suptitle(f"Power Required: {round(k*0.3004*(R**3)*(w_f**3), 1)} W", fontsize=16)
+p.suptitle(f"Power Required: {round(k*0.3004*(R**3)*(w_f**3), 1)} W \n Time to 99% of Max Angular Velocity: {round(n_N, 1)} s", fontsize=16)
 
 p.show()
