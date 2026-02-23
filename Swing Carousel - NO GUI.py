@@ -12,7 +12,7 @@ t = 0
 r = 5
 l = 3
 w_f = 2
-k = 6
+k = 12
 
 # lists to store the progression of w and x along with t
 timestamp = [t]
@@ -36,18 +36,24 @@ for i in range(10):
 # terminal distance between the seats and the rotation axis
 R = r+l*sin(x_f)
 
+structure_inertia = 20.65 * r**4 # to avoid recalculationg a constant each iteration
 
-structure_inertia = 20.65 * r**4
+# lists to store the progression of w and x along with t
+engine_torque = k * 0.3004 * (R**3) * (w_f**2)
+timestamp = [t]
+velo_stamp = [w]
+ang_stamp = [x]
+power_stamp = [w*engine_torque]
+
 
 capped =False
 # Iterating over time - Euler-forward method implementation to solve the differential equation. 
 # Stops when w is virtually equal to w_f
-while w < w_f*0.999: 
+while w < w_f*0.999:
     A = r+l*sin(x) # Distance between the seats and the rotation axis
     w = dt*0.3004*((R**3)*(w_f**2)-(9.81*A**2)*tan(x))/(structure_inertia+70*A**2) + w #equation for the progression of angular velocity
     x = atan((A)*(w**2)/9.81) # equation for the progression of angular elevation
     
-    # To find when the system is very close to terminal velocity
     if (not capped) and w > w_f*0.99: 
         n_N = t
         capped =True
@@ -57,10 +63,12 @@ while w < w_f*0.999:
     timestamp.append(t)
     velo_stamp.append(w)
     ang_stamp.append(x)
+    power_stamp.append(w*engine_torque)
 
-p.figure(figsize=(15, 8))
+
+p.figure(figsize=(20, 10))
 # Plotting the angular velocity graph
-p.subplot(1, 2, 1)
+p.subplot(1, 3, 1)
 p.plot(timestamp, velo_stamp)
 p.title("Angular Velocity (rad/s) vs. Time (s)")
 p.xlabel("Time (s)")
@@ -71,7 +79,7 @@ p.axhline(y=w_f, color='red', linestyle='--', linewidth=1, label="Terminal Angul
 p.legend()
 
 # Plotting the angular elevation graph
-p.subplot(1, 2, 2)
+p.subplot(1, 3, 2)
 p.plot(timestamp, ang_stamp)
 p.title("Angular Elevation (rad) vs. Time (s)")
 p.xlabel("Time (s)")
@@ -81,6 +89,17 @@ p.ylim(0,x_f*1.2)
 p.axhline(y=x_f, color='red', linestyle='--', linewidth=1, label="Terminal Angular Elevation")
 p.legend()
 
-p.suptitle(f"Power Required: {round(k*0.3004*(R**3)*(w_f**3), 1)} W \n Time to 99% of Max Angular Velocity: {round(n_N, 1)} s", fontsize=16)
+# Plotting the power consumption graph
+p.subplot(1, 3, 3)
+p.plot(timestamp, power_stamp)
+p.title("Power (W) vs. Time (s)")
+p.xlabel("Time (s)")
+p.ylabel("Power (W)")
+p.xlim(0,timestamp[-1])
+p.ylim(0,k * 0.3004 * (R**3) * (w_f**3)*1.2)
+p.axhline(y=w_f*engine_torque, color='red', linestyle='--', linewidth=1, label="Terminal Power Consumption")
+p.legend()
+
+p.suptitle(f"Total Energy Required: {round(sum(power_stamp)*0.01/1000, 1)} kJ \n Average Power Required: {round(sum(power_stamp)*0.01/1000/timestamp[-1], 1)} kW \n Time to 99% of Max Angular Velocity: {round(n_N, 1)} s", fontsize=12)
 
 p.show()
