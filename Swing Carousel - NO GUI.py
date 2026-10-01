@@ -25,7 +25,7 @@ max_x =pi/2
 min_x = 0
 
 # Dichotomy implementation to solve for the terminal angular elevation - Numerical solution to a transcendental equation
-for i in range(10):
+for i in range(20):
     if x_f < atan((w_f*w_f/9.81)*(r+l*sin(x_f))):
         min_x = x_f
         x_f = (min_x+max_x)/2
@@ -34,29 +34,49 @@ for i in range(10):
         x_f = (min_x+max_x)/2
 
 # terminal distance between the seats and the rotation axis
-R = r+l*sin(x_f)
+A_f = r+l*sin(x_f)
 
-structure_inertia = 20.65 * r**4 # to avoid recalculationg a constant each iteration
+# Parameters:
+g = 9.81
+C_b = 1.28
+C_p = 0.776
+rhoAir = 1.225
+rho = 7930
+Area_p = 0.632
+h = 0.1
+m = 70
+
+D_p = 1/2 * C_p * rhoAir * Area_p
+D_b = C_b * rhoAir
+
+I_s = 5/192 * rho * h * r**4 # to avoid recalculationg a constant each iteration
 
 # lists to store the progression of w and x along with t
-engine_torque = k * 0.3004 * (R**3) * (w_f**2)
-timestamp = [t]
-velo_stamp = [w]
-ang_stamp = [x]
-power_stamp = [w*engine_torque]
+engine_torque = k * (D_p * (A_f**3) * (w_f**2) + 3/320 * D_b * (r**5) * (w_f**2))
+torque_eff = D_p * (A_f**3) * (w_f**2) + 3/320 * D_b * (r**5) * (w_f**2)
 
+timestamp = [0]
+velo_stamp = [0]
+ang_stamp = [0]
+power_stamp = [0]
+
+A_n_1 = r
+A_n = r
 
 capped =False
 # Iterating over time - Euler-forward method implementation to solve the differential equation. 
 # Stops when w is virtually equal to w_f
 while w < w_f*0.999:
-    A = r+l*sin(x) # Distance between the seats and the rotation axis
-    w = dt*0.3004*((R**3)*(w_f**2)-(9.81*A**2)*tan(x))/(structure_inertia+70*A**2) + w #equation for the progression of angular velocity
-    x = atan((A)*(w**2)/9.81) # equation for the progression of angular elevation
+    inertia = I_s +m*A_n**2 
+    w += (dt*(torque_eff - D_p*(A_n**3)*(w**2) - 3/320 * D_b*(r**5)*(w**2)) - w*2*m*A_n*(A_n - A_n_1))/(inertia) #equation for the progression of angular velocity
+    x = atan((A_n)*(w**2)/9.81) # equation for the progression of angular elevation
+
+    A_n_1 = A_n
+    A_n = r+l*sin(x)
     
     if (not capped) and w > w_f*0.99: 
         n_N = t
-        capped =True
+        capped =True #recording when w = 0.99 * w_f
 
     t+=dt
     # storing new w and x values along with their respective timestamps
@@ -96,10 +116,10 @@ p.title("Power (W) vs. Time (s)")
 p.xlabel("Time (s)")
 p.ylabel("Power (W)")
 p.xlim(0,timestamp[-1])
-p.ylim(0,k * 0.3004 * (R**3) * (w_f**3)*1.2)
+p.ylim(0, 1.2 * k *(D_p * (A_f**3) * (w_f**3) + 3/320 * D_b * r**5 * w_f**3))
 p.axhline(y=w_f*engine_torque, color='red', linestyle='--', linewidth=1, label="Terminal Power Consumption")
 p.legend()
 
-p.suptitle(f"Total Energy Required: {round(sum(power_stamp)*0.01/1000, 1)} kJ \n Average Power Required: {round(sum(power_stamp)*0.01/1000/timestamp[-1], 1)} kW \n Time to 99% of Max Angular Velocity: {round(n_N, 1)} s", fontsize=12)
+p.suptitle(f"Total Energy Required (To reach 99.9% terminal angular velocity): {round(sum(power_stamp)*dt/1000, 4)} kJ \n Average Power Required (To reach 99.9% terminal angular velocity): {round(sum(power_stamp)*dt/1000/timestamp[-1], 5)} kW \n Time to 99% of ω_f: {round(n_N, 1)} s; Time to 99.9% of ω_f: {round(timestamp[-1], 1)} s", fontsize=16)
 
 p.show()
